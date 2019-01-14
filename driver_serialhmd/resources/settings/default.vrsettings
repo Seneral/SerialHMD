@@ -1,0 +1,29 @@
+{
+	"driver_serialhmd" : {
+		"serialNumber" : "311220181850", 
+		"modelNumber" : "Serial HMD DIY 1",
+
+		"secondsFromVsyncToPhotons" : 0.01111111,
+		"displayFrequency" : 60.0,
+
+		"windowX" : 1920,
+		"windowY" : 0,
+		"windowWidth" : 1920,
+		"windowHeight" : 1080,
+		"renderWidth" : 960,
+		"renderHeight" : 1080,
+
+		"DistortionK1" : 0.91,
+		"DistortionK2" : 0.93,
+		"ZoomWidth" : 0.8,
+		"ZoomHeight" : 0.8,
+
+		"MonitorVID" : 0,
+		"MonitorPID" : 0,
+
+		"IsOnDesktop" : true,
+		"IsRealDisplay" : true,
+
+		"DebugMode" : true
+	}
+}
