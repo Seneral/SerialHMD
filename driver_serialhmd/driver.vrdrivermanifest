@@ -1,0 +1,10 @@
+{
+	"enable" : true,
+	"name" : "serialhmd",
+	"directory" : "",
+	"resourceOnly" : false,
+	"hmd_presence" :
+	[
+		"0525.*"
+	]
+}
