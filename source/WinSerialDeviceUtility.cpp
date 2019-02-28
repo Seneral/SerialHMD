@@ -1,6 +1,5 @@
 #include <WinSerialDeviceUtility.h>
 
-
 // *******************************************************
 // Print all USB Devices...
 // *******************************************************
@@ -32,12 +31,12 @@ int findUSBDevice(const char *match, char **hardwareID)
 	for (int i = 0;; i++)
 	{
 		SP_DEVINFO_DATA DeviceInfoData;
-		char HardwareID[128];
-		DWORD HardwareIDSize = 1024;
+		char HardwareID[256];
+		DWORD HardwareIDSize = 256;
 		DeviceInfoData.cbSize = sizeof(DeviceInfoData);
 		if (!SetupDiEnumDeviceInfo(hDevInfo, i, &DeviceInfoData))
 			return 1;
-		SetupDiGetDeviceRegistryProperty(hDevInfo, &DeviceInfoData, SPDRP_HARDWAREID, NULL, (BYTE *)HardwareID, 1024, &HardwareIDSize);
+		SetupDiGetDeviceRegistryPropertyA(hDevInfo, &DeviceInfoData, SPDRP_HARDWAREID, NULL, (BYTE *)HardwareID, 256, &HardwareIDSize);
 		if (strstr(HardwareID, match))
 		{
 			*hardwareID = new char[HardwareIDSize];
@@ -180,14 +179,14 @@ int findRecordedDevices(const char *match, char ***DeviceIDComPairs, int *numRec
 					{ // Device match
 
 						// Compose intermediate device path
-						char devicePath[strlen(USBPath) + 2 + hardwareIDSize];
-						strcpy(devicePath, USBPath);
-						strcat(devicePath, "\\");
-						strcat(devicePath, hardwareID);
+						std::string devicePath;
+						devicePath.append(USBPath);
+						devicePath.append("\\");
+						devicePath.append(hardwareID);
 
 						// Open device key
 						HKEY DeviceKey;
-						long retDO = RegOpenKeyExA(HKEY_LOCAL_MACHINE, devicePath, 0, KEY_READ, &DeviceKey);
+						long retDO = RegOpenKeyExA(HKEY_LOCAL_MACHINE, devicePath.c_str(), 0, KEY_READ, &DeviceKey);
 						if (retDO == ERROR_SUCCESS)
 						{ // Successfully opened device key
 							for (int sk = 0;; sk++)
@@ -201,16 +200,16 @@ int findRecordedDevices(const char *match, char ***DeviceIDComPairs, int *numRec
 								{ // Got name of subkey, now open 'Device Parameters'
 
 									// Compose final path
-									char paramsPath[strlen(devicePath) + 2 + skNameSize + 2 + strlen(DevParams)];
-									strcpy(paramsPath, devicePath);
-									strcat(paramsPath, "\\");
-									strcat(paramsPath, skName);
-									strcat(paramsPath, "\\");
-									strcat(paramsPath, DevParams);
+									std::string paramsPath;
+									paramsPath.append(devicePath);
+									paramsPath.append("\\");
+									paramsPath.append(skName);
+									paramsPath.append("\\");
+									paramsPath.append(DevParams);
 
 									// Open 'Device Parameters' key
 									HKEY DevParamsKey;
-									long retPO = RegOpenKeyExA(HKEY_LOCAL_MACHINE, paramsPath, 0, KEY_READ, &DevParamsKey);
+									long retPO = RegOpenKeyExA(HKEY_LOCAL_MACHINE, paramsPath.c_str(), 0, KEY_READ, &DevParamsKey);
 									if (retPO == ERROR_SUCCESS)
 									{
 										// Query info about 'Device Parameters' values
@@ -229,7 +228,7 @@ int findRecordedDevices(const char *match, char ***DeviceIDComPairs, int *numRec
 												DWORD paramDataSize = maxValueSize;
 
 												// Get name and value of parameter
-												long retPE = RegEnumValue(DevParamsKey, p, paramName, &paramNameSize, NULL, NULL, (BYTE *)paramDataBuffer, &paramDataSize);
+												long retPE = RegEnumValueA(DevParamsKey, p, paramName, &paramNameSize, NULL, NULL, (BYTE *)paramDataBuffer, &paramDataSize);
 												if (retPE == ERROR_SUCCESS)
 												{ // Successfully read name and value of parameter
 
@@ -253,7 +252,7 @@ int findRecordedDevices(const char *match, char ***DeviceIDComPairs, int *numRec
 										RegCloseKey(DevParamsKey);
 									}
 									else
-										printf("Error while opening key %s: %ld \n", paramsPath, retPO);
+										printf("Error while opening key %s: %ld \n", paramsPath.c_str(), retPO);
 								}
 								else // No more subkeys to check, continue to next device
 									break;
@@ -261,7 +260,7 @@ int findRecordedDevices(const char *match, char ***DeviceIDComPairs, int *numRec
 							RegCloseKey(DeviceKey);
 						}
 						else
-							printf("Error while opening key %s: %ld \n", devicePath, retDO);
+							printf("Error while opening key %s: %ld \n", devicePath.c_str(), retDO);
 					}
 				}
 			}

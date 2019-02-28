@@ -7,6 +7,10 @@
 #include <math.h>
 #include <string.h>
 
+#if defined(_WIN32)
+#include <Windows.h>
+#endif
+
 // *******************************************************
 // Tracked SerialHMD Device
 // *******************************************************
@@ -26,6 +30,7 @@ class SerialHMDDriver : public vr::ITrackedDeviceServerDriver, public vr::IVRDis
 
 	// Pose and Tracking
 
+	void GetHMDData(_HMDData *hmd);
 	virtual DriverPose_t GetPose();
 	void RunFrame();
 
@@ -76,6 +81,12 @@ class SerialHMDDriver : public vr::ITrackedDeviceServerDriver, public vr::IVRDis
 	float m_fZoomHeight;
 	bool m_bRealDisplay;
 	bool m_bOnDesktop;
+
+	bool m_mouseView;
+	int m_mouseX;
+	int m_mouseY;
+	float m_mouseYaw;
+	float m_mousePitch;
 };
 
 #endif // HMDDRIVER_H

@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <windows.h>
 #include <SetupAPI.h>
+#include <string>
 
 // *******************************************************
 // Print all USB Devices...

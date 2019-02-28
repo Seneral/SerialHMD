@@ -63,8 +63,7 @@ SerialHMDServer g_server;
 // First watchdog, and once watchdog recognizes an HMD, the server
 // *******************************************************
 
-HMD_DLL_EXPORT
-void __cdecl *HmdDriverFactory(const char *pInterfaceName, int *pReturnCode)
+HMD_DLL_EXPORT void *HmdDriverFactory(const char *pInterfaceName, int *pReturnCode)
 {
 	if (0 == strcmp(IServerTrackedDeviceProvider_Version, pInterfaceName))
 	{
