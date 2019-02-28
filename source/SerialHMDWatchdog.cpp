@@ -6,15 +6,18 @@
 // Watchdog frequently checking if HMD has been connected
 // *******************************************************
 
-void SerialHMDWatchdog::Watchdog()
+bool g_watchdogExiting;
+
+void Watchdog()
 {
 	#if defined(_WIN32)
 
-	int numResets = 0;
+	int numResets = -1;
 
 	reset: // If HMD failed to connect, reset init
-	while (!m_exiting && numResets < 5)
+	while (!g_watchdogExiting && numResets < 5)
 	{
+		numResets++;
 		int triesFindCOMPort = 0; // Num tries to find COM Port
 		int triesConnectSerRPi = 0;  // Num tries to connect to Serial RPi
 		int failedConnectSerRPi = 0;  // Failed times to connect to Serial RPi
@@ -26,7 +29,7 @@ void SerialHMDWatchdog::Watchdog()
 		DriverLog("Waiting for HMD... \n");
 		
 		//wait: // Wait until a Serial RPi has been detected by windows
-		while (!m_exiting)
+		while (!g_watchdogExiting)
 		{ // Check for Serial RPis
 			char *hardwareID;
 			if (findUSBDevice("VID_0525", &hardwareID) == 0)
@@ -40,7 +43,7 @@ void SerialHMDWatchdog::Watchdog()
 		}
 
 		//find: // Now identify com ports of all connected serial RPis
-		while (!m_exiting)
+		while (!g_watchdogExiting)
 		{ // Try identify COM Ports
 
 			char **comPorts;
@@ -76,7 +79,7 @@ void SerialHMDWatchdog::Watchdog()
 		// TODO: for loop labeled ports, iterating all ports with connect + identify
 
 		//connect: // Now try to connect to serial port
-		while (!m_exiting)
+		while (!g_watchdogExiting)
 		{ // Connect to RPi
 			serRPiPort = new SerialPort(serRPiComPort);
 			if (serRPiPort->isConnected())
@@ -106,7 +109,7 @@ void SerialHMDWatchdog::Watchdog()
 		}
 
 		//identify: // Now identify connected Serial RPi as HMD
-		while (!m_exiting && serRPiPort->isConnected())
+		while (!g_watchdogExiting && serRPiPort->isConnected())
 		{ // Set identification request to RPi
 
 			// Update status of port to check connection and update QueueSize
@@ -125,7 +128,7 @@ void SerialHMDWatchdog::Watchdog()
 			if (serRPiPort->getQueueSize() > 0)
 			{ // Read response and check for identification code
 				int responseSize = 32;
-				char response[responseSize];
+				char response[32];
 				int error = serRPiPort->readSerialPort(response, &responseSize);
 				DriverLog("Response: %s! \n", response);
 				if (error != 0)
@@ -143,14 +146,16 @@ void SerialHMDWatchdog::Watchdog()
 				{ // Identified as Serial HMD
 					DriverLog("Successfully identified RPi as HMD! \n");
 					numResets = 0;
+					serRPiPort->Close();
 					vr::VRWatchdogHost()->WatchdogWakeUp();
 					goto idle; //return; // Success, stop watchdog
 				}
 				else if (failedResponses >= 3)
-				{ // For DEBUG only
-					DriverLog("Invalid Identification! For Debug only, accepting port as HMD! \n");
-					vr::VRWatchdogHost()->WatchdogWakeUp();
-					goto idle; //return; // Success, stop watchdog
+				{ // Failed to identify as HMD, disconnect
+					DriverLog("Invalid Identification! Disconnecting! \n");
+					serRPiPort->Close();
+					std::this_thread::sleep_for(std::chrono::seconds(10));
+					goto reset; // TODO: goto ports
 				}
 				else
 				{ // Not correct (or mixed up) response
@@ -179,7 +184,7 @@ void SerialHMDWatchdog::Watchdog()
 	}
 
 	idle:
-	while (!m_exiting)
+	while (!g_watchdogExiting)
 	{
 		char *hardwareID;
 		if (findUSBDevice("VID_0525", &hardwareID) != 0)
@@ -202,8 +207,8 @@ EVRInitError SerialHMDWatchdog::Init(vr::IVRDriverContext *pDriverContext)
 
 	DriverLog("Initialzing watchdog! \n");
 
-	m_exiting = false;
-	m_pWatchdogThread = new std::thread(&Watchdog, this);
+	g_watchdogExiting = false;
+	m_pWatchdogThread = new std::thread(Watchdog);
 	if (!m_pWatchdogThread)
 	{
 		DriverLog("Unable to create watchdog thread! \n");
@@ -217,7 +222,7 @@ EVRInitError SerialHMDWatchdog::Init(vr::IVRDriverContext *pDriverContext)
 
 void SerialHMDWatchdog::Cleanup()
 {
-	m_exiting = true;
+	g_watchdogExiting = true;
 	if (m_pWatchdogThread)
 	{
 		DriverLog("Closing watchdog! \n");

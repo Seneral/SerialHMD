@@ -23,16 +23,13 @@ class SerialHMDWatchdog : public IVRWatchdogProvider
 	SerialHMDWatchdog()
 	{
 		m_pWatchdogThread = nullptr;
-		m_exiting = false;
 	}
 
-	void Watchdog ();
 	virtual EVRInitError Init(vr::IVRDriverContext *pDriverContext);
 	virtual void Cleanup();
 
   private:
 	std::thread *m_pWatchdogThread;
-	bool m_exiting;
 };
 
 #endif // HMDWATCHDOG_H

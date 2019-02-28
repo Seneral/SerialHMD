@@ -11,6 +11,8 @@ EVRInitError SerialHMDServer::Init(vr::IVRDriverContext *pDriverContext)
 	InitDriverLog(vr::VRDriverLog());
 	DriverLog("Server: Init \n");
 
+	//VRInitError_Driver_HmdDisplayNotFound
+
 	// Create HMD Driver Instance and record it as a tracked device
 	m_hmdDriver = new SerialHMDDriver();
 	vr::VRServerDriverHost()->TrackedDeviceAdded(m_hmdDriver->GetSerialNumber().c_str(), vr::TrackedDeviceClass_HMD, m_hmdDriver);
@@ -34,8 +36,8 @@ void SerialHMDServer::Cleanup()
 void SerialHMDServer::RunFrame()
 {
 	// TODO: Replace with thread
-	//if (m_hmdDriver)
-	//	m_hmdDriver->RunFrame();
+	if (m_hmdDriver)
+		m_hmdDriver->RunFrame();
 
 	/* Add future input devices here
 

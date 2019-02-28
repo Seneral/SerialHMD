@@ -68,37 +68,50 @@ EVRInitError SerialHMDDriver::Activate(vr::TrackedDeviceIndex_t unObjectId)
 	vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_ModelNumber_String, m_sModelNumber.c_str());
 	vr::VRProperties()->SetStringProperty(m_ulPropertyContainer, Prop_RenderModelName_String, m_sModelNumber.c_str());
 	vr::VRProperties()->SetFloatProperty(m_ulPropertyContainer, Prop_UserIpdMeters_Float, m_flIPD);
-	vr::VRProperties()->SetFloatProperty(m_ulPropertyContainer, Prop_UserHeadToEyeDepthMeters_Float, 0.f);
+	vr::VRProperties()->SetFloatProperty(m_ulPropertyContainer, Prop_UserHeadToEyeDepthMeters_Float, 0.02f);
 	vr::VRProperties()->SetFloatProperty(m_ulPropertyContainer, Prop_DisplayFrequency_Float, m_flDisplayFrequency);
 	vr::VRProperties()->SetFloatProperty(m_ulPropertyContainer, Prop_SecondsFromVsyncToPhotons_Float, m_flSecondsFromVsyncToPhotons);
 	DriverLog("Driver: Set Prop Model/Serial/IPD/HeadToEye/Freq/VSyncSec \n");
 
-	// return a constant that's not 0 (invalid) or 1 (reserved for Oculus)
-	vr::VRProperties()->SetUint64Property(m_ulPropertyContainer, Prop_CurrentUniverseId_Uint64, 11);
-	DriverLog("Driver: Set Prop_CurrentUniverseId_Uint64 : 11\n");
+	// Return a constant that's not 0 (invalid) or 1 (reserved for Oculus)
+	vr::VRProperties()->SetUint64Property(m_ulPropertyContainer, Prop_CurrentUniverseId_Uint64, 2);
+	DriverLog("Driver: Set Prop_CurrentUniverseId_Uint64 : 2\n");
 
-	// avoid "not fullscreen" warnings from vrmonitor
+	// Avoid "not fullscreen" warnings from vrmonitor
 	vr::VRProperties()->SetBoolProperty(m_ulPropertyContainer, Prop_IsOnDesktop_Bool, vr::VRSettings()->GetBool(k_pch_serialhmd_Section, "IsOnDesktop"));
 	DriverLog("Driver: Set Prop_IsOnDesktop_Bool : %s\n", vr::VRSettings()->GetBool(k_pch_serialhmd_Section, "IsOnDesktop")? "True" : "False");
 
 	// Debug mode activate Windowed Mode (borderless fullscreen), lock to 30 FPS
-	vr::VRProperties()->SetBoolProperty(m_ulPropertyContainer, Prop_DisplayDebugMode_Bool, m_bDebugMode);
-	DriverLog("Driver: Set Prop_DisplayDebugMode_Bool : %s \n", m_bDebugMode? "True" : "False");
+	//vr::VRProperties()->SetBoolProperty(m_ulPropertyContainer, Prop_DisplayDebugMode_Bool, m_bDebugMode);
+	//DriverLog("Driver: Set Prop_DisplayDebugMode_Bool : %s \n", m_bDebugMode? "True" : "False");
 
-	
-	// TODO: Set Hidden Area Mesh
-	// IN: vr::VRHiddenArea()
-	// SET: ETrackedPropertyError SetHiddenArea(EVREye eEye, EHiddenAreaMeshType type, HmdVector2_t * pVerts, uint32_t unVertCount);
-	// GET: uint32_t GetHiddenArea( EVREye eEye, EHiddenAreaMeshType type, HmdVector2_t *pVerts, uint32_t unVertCount, ETrackedPropertyError *peError );
-	uint32_t hamVertCount = 6;
-	HmdVector2_t hamVertsLeft[hamVertCount] = { { +0.1, 0.05 }, { +0.4, 0.05 }, { +0.5, 0.3 }, { +0.5, 0.6 }, { +0.4, 0.95 }, { +0.1, 0.95 }, { +0, 0.5 } };
-	HmdVector2_t hamVertsRight[hamVertCount] = { { -0.1, 0.05 }, { -0.4, 0.05 }, { -0.5, 0.3 }, { -0.5, 0.6 }, { -0.4, 0.95 }, { -0.1, 0.95 }, { -0, 0.5 } };
+
+	// Hidden Area Mesh
+
+	const uint32_t hamVertCount = 12*3;
+	float vertRim = 0.05f, outerRim = 0.05f, innerRim = 0.98f, outerWidth = 0.3f, innerWidth = 0.3f, vertOuter = 0.2f, vertInner = 0.8f;
+	HmdVector2_t // All inner points defining the outline
+		TL = { vertOuter, 0 + vertRim }, LT = { outerRim, 0.5f - outerWidth / 2 },
+		TR = { vertInner, 0 + vertRim }, RT = { innerRim, 0.5f - innerWidth / 2 },
+		BR = { vertInner, 1 - vertRim }, RB = { innerRim, 0.5f + innerWidth / 2 },
+		BL = { vertOuter, 1 - vertRim }, LB = { outerRim, 0.5f + outerWidth / 2 };
+	HmdVector2_t hamVertsLeft[hamVertCount] = {
+		{ 0.0, 0.0 }, TL, LT, // TL Corner
+		{ 1.0, 0.0 }, TR, RT, // TR Corner
+		{ 1.0, 1.0 }, BR, RB, // BR Corner
+		{ 0.0, 1.0 }, BL, LB, // BL Corner
+		{ 0.0, 0.0 }, TL, TR, { 0.0, 0.0 }, { 1.0, 0.0 }, TR, // Top side
+		{ 1.0, 0.0 }, RT, RB, { 1.0, 0.0 }, { 1.0, 1.0 }, RB, // Right side
+		{ 1.0, 1.0 }, BR, BL, { 1.0, 1.0 }, { 0.0, 1.0 }, BL, // Bottom side
+		{ 0.0, 1.0 }, LB, LT, { 0.0, 1.0 }, { 0.0, 0.0 }, LT  // Left side
+	};
+	HmdVector2_t hamVertsRight[hamVertCount];
+	for (int i = 0; i < hamVertCount; i++)
+		hamVertsRight[i] = { 1-hamVertsLeft[i].v[0], hamVertsLeft[i].v[1] };
 	ETrackedPropertyError err = vr::VRHiddenArea()->SetHiddenArea(Eye_Left, k_eHiddenAreaMesh_Standard, hamVertsLeft, hamVertCount);
 	DriverLog("Driver: SetHiddenArea Left: %ld\n", err);
 	err = vr::VRHiddenArea()->SetHiddenArea(Eye_Right, k_eHiddenAreaMesh_Standard, hamVertsRight, hamVertCount);
 	DriverLog("Driver: SetHiddenArea Right: %ld\n", err);
-
-	// TODO: Activate HMD
 
 	return VRInitError_None;
 }
@@ -130,18 +143,56 @@ void SerialHMDDriver::PowerOff()
 // Pose and Tracking
 // *******************************************************
 
-void GetHMDData(_HMDData *hmd)
+void SerialHMDDriver::GetHMDData(_HMDData *hmd)
 {
 	// TODO: Get actual sensor data
 	// Will be executed on separate thread usually 
 
+	float yaw = 0, pitch = 0, roll = 0;
+
+#if defined(_WIN32) // Mouse look
+
+	if (!m_mouseView)
+	{
+		m_mouseView = true;
+		POINT pos;
+		if (GetCursorPos(&pos))
+		{
+			m_mouseX = (int)pos.x;
+			m_mouseY = (int)pos.y;
+			m_mouseYaw = 0;
+			m_mousePitch = 0;
+		}
+	}
+	else 
+	{
+		POINT pos;
+		if (GetCursorPos(&pos))
+		{
+			m_mouseYaw = m_mouseYaw - (float)(pos.x - m_mouseX)*0.1f;
+			if (m_mouseYaw < -360 || m_mouseYaw > 360) m_mouseYaw = (float)fmod(m_mouseYaw, 360);
+			m_mousePitch = m_mousePitch - (float)(pos.y - m_mouseY)*0.1f;
+			if (m_mousePitch < -80) m_mousePitch = -80;
+			if (m_mousePitch > 80) m_mousePitch = 80;
+
+			m_mouseX = (int)pos.x;
+			m_mouseY = (int)pos.y;
+		}
+
+		yaw = m_mouseYaw;
+		pitch = m_mousePitch;
+		roll = 0;
+	}
+
+#endif
+
+	hmd->Yaw = roll;
+	hmd->Pitch = yaw;
+	hmd->Roll = pitch;
+
 	hmd->X = 0;
 	hmd->Y = 0;
-	hmd->Z = 1.8;
-
-	hmd->Yaw = rand() % 360;
-	hmd->Pitch = rand() % 360;
-	hmd->Roll = rand() % 360;
+	hmd->Z = 180;
 }
 
 DriverPose_t SerialHMDDriver::GetPose()
@@ -232,7 +283,6 @@ void SerialHMDDriver::DebugRequest(const char *pchRequest, char *pchResponseBuff
 // Display Methods
 // *******************************************************
 
-// (1920, 0, 1920, 1080)
 void SerialHMDDriver::GetWindowBounds(int32_t *pnX, int32_t *pnY, uint32_t *pnWidth, uint32_t *pnHeight)
 {
 	DriverLog("Display: GetWindowBounds (%d, %d)(%d, %d) \n", int(m_nWindowX), int(m_nWindowY), int(m_nWindowWidth), int(m_nWindowHeight));
@@ -243,21 +293,18 @@ void SerialHMDDriver::GetWindowBounds(int32_t *pnX, int32_t *pnY, uint32_t *pnWi
 	*pnHeight = m_nWindowHeight;
 }
 
-// true
 bool SerialHMDDriver::IsDisplayOnDesktop()
 {
 	DriverLog("Display: IsDisplayOnDesktop: %s \n", m_bOnDesktop? "true" : "false");
 	return m_bOnDesktop;
 }
 
-// true
 bool SerialHMDDriver::IsDisplayRealDisplay()
 {
 	DriverLog("Display: IsDisplayRealDisplay: %s \n", m_bRealDisplay? "true" : "false");
 	return m_bRealDisplay;
 }
 
-// (1920, 1080)
 void SerialHMDDriver::GetRecommendedRenderTargetSize(uint32_t *pnWidth, uint32_t *pnHeight)
 {
 	DriverLog("Display: GetRecommendedRenderTargetSize (%d, %d) \n", int(m_nRenderWidth), int(m_nRenderHeight));
@@ -266,60 +313,44 @@ void SerialHMDDriver::GetRecommendedRenderTargetSize(uint32_t *pnWidth, uint32_t
 	*pnHeight = m_nRenderHeight;
 }
 
-// (-1, 1, -1, 1) or (-0.3, 0.3, -0.5, 0.5)
 void SerialHMDDriver::GetProjectionRaw(EVREye eEye, float *pfLeft, float *pfRight, float *pfTop, float *pfBottom)
 {
-	*pfLeft = -0.3;
-	*pfRight = 0.3;
-	*pfTop = -0.5;
-	*pfBottom = 0.5;
+	*pfLeft = -1.0;
+	*pfRight = 1.0;
+	*pfTop = -1.0;
+	*pfBottom = 1.0;
 	
 	DriverLog("Display: GetProjectionRaw %s (L %f, R %f, T %f, B %f)\n", eEye == Eye_Left? "Left" : "Right", *pfLeft, *pfRight, *pfTop, *pfBottom);
 }
 
-// Left: (0, 0, 960, 1080) Right: (960, 0, 960, 1080)
 void SerialHMDDriver::GetEyeOutputViewport(EVREye eEye, uint32_t *pnX, uint32_t *pnY, uint32_t *pnWidth, uint32_t *pnHeight)
 {
+	*pnX = eEye == Eye_Left ? 0 : m_nWindowWidth / 2;
 	*pnY = 0;
 	*pnWidth = m_nWindowWidth / 2;
 	*pnHeight = m_nWindowHeight;
-
-	if (eEye == Eye_Left)
-		*pnX = 0;
-	else
-		*pnX = m_nWindowWidth / 2;
-
+	
 	DriverLog("Display: GetEyeOutputViewport %s (%d, %d)(%d, %d) \n", eEye == Eye_Left? "Left" : "Right", int(*pnX), int(*pnY), int(*pnWidth), int(*pnHeight));
 }
 
-// Same values
-DistortionCoordinates_t SerialHMDDriver::ComputeDistortion(EVREye eEye, float fU, float fV)
+vr::DistortionCoordinates_t SerialHMDDriver::ComputeDistortion(vr::EVREye eEye, float fU, float fV)
 {
-	vr::DistortionCoordinates_t coordinates;
+	vr::DistortionCoordinates_t coords;
 
 	//distortion for lens from https://github.com/HelenXR/openvr_survivor/blob/master/src/head_mount_display_device.cc
-	/*
+	
 	double rr = sqrt((fU - 0.5f) * (fU - 0.5f) + (fV - 0.5f) * (fV - 0.5f));
 	double r2 = rr * (1 + m_fDistortionK1 * (rr * rr) + m_fDistortionK2 * (rr * rr * rr * rr));
 	double theta = atan2(fU - 0.5f, fV - 0.5f);
-	double hX = sin(theta) * r2 * m_fZoomWidth;
-	double hY = cos(theta) * r2 * m_fZoomHeight;
+	float hX = (float)(sin(theta) * r2 * m_fZoomWidth) + 0.5f;
+	float hY = (float)(cos(theta) * r2 * m_fZoomHeight) + 0.5f;
 
-	coordinates.rfBlue[0] = hX + 0.5f;
-	coordinates.rfBlue[1] = hY + 0.5f;
-	coordinates.rfGreen[0] = hX + 0.5f;
-	coordinates.rfGreen[1] = hY + 0.5f;
-	coordinates.rfRed[0] = hX + 0.5f;
-	coordinates.rfRed[1] = hY + 0.5f;
-	*/
+	coords.rfBlue[0] = hX;
+	coords.rfBlue[1] = hY;
+	coords.rfGreen[0] = hX;
+	coords.rfGreen[1] = hY;
+	coords.rfRed[0] = hX;
+	coords.rfRed[1] = hY;
 
-	coordinates.rfBlue[0] = fU;
-	coordinates.rfBlue[1] = fV;
-	coordinates.rfGreen[0] = fU;
-	coordinates.rfGreen[1] = fV;
-	coordinates.rfRed[0] = fU;
-	coordinates.rfRed[1] = fV;
-
-	DriverLog("Display: ComputeDistortion: B(%f,%f) G(%f,%f) R(%f,%f) \n", coordinates.rfBlue[0], coordinates.rfBlue[1], coordinates.rfGreen[0], coordinates.rfGreen[1], coordinates.rfRed[0], coordinates.rfRed[1]);
-	return coordinates;
+	return coords;
 }
