@@ -45,3 +45,9 @@ At least 5% on each side is completely useless, that is considering really tryin
 **IMU sensor:** Definitely a MPU-9150. I got a MPU-9250, a smaller version, but it's accuracy is not too impressive.  
 **Processor:** Raspberry Pi Zero. I recommend you use the W version, it solves a LOT of headaches if you don't have indepth knowledge of RPis already. And it's just cooler when your HMD has wifi, isn't it?
 As far as I can judge so far (considering I got a less-than perfect experience due to other problems) it is perfectly capable of the job.  
+
+<p align="center">
+  <img src="HardwareImages/SerialHMD_SideHDMI.jpg" width="20%" hspace="20"/>
+  <img src="HardwareImages/SerialHMD_SideUSB.jpg" width="20%" hspace="20"/>
+  <img src="HardwareImages/SerialHMD_Electronics.jpg" width="20%" hspace="20"/>
+</p>
