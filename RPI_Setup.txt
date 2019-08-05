@@ -1,0 +1,98 @@
+1. Setup RPI SD:
+- Flash Image
+- Setup WIFI:
+	/etc/wpa_supplicant/wpa_supplicant.conf :
+		Add following block with ssid and psk generated from wpa_passphrase command:
+			network={
+   	 			ssid="ssid"
+   		 		psk= 	#psk="" or wpa_passphrase ssid
+			}
+- Enable ssh
+	touch "ssh" in boot partition
+
+2. Enter SD to RPI:
+- Connect to RPI with "ssh pi@raspberry.local" and default password raspberry
+- Change password with "passwd"
+- Enable USB Serial
+	boot config.txt : add at end: # For USB Serial
+			dtoverlay=dwc2
+			enable_uart=0  # CHANGED FROM 1
+	boot cmdline.txt : add after rootwait:
+			modules-load=dwc2,g_serial
+- With "sudo raspi-config":
+	raspi-config/Networking/Hostname -> serialhmd
+		Not working:	raspi-config/Interface/Serial -> Disable console, enable serial
+		TRY:			raspi-config/Interface/Serial -> Disable console, disable serial
+	raspi-config/Interface/I2C -> enable
+	raspi-config/Interface/SPI -> enable
+	raspi-config/Interface/ssh -> enable
+- Reboot/Shutdown
+
+3. Setup SerialHMD
+- Copy over files to "home/pi":
+	startup.sh
+	SerialHMDInterface.py
+- Connect to RPI with "ssh pi@serialhmd.local"
+- Add startup entry to "etc/rc.local":
+		echo "Starting tmux session 'session'"
+		/usr/bin/tmux new-session -d -s session
+		/usr/bin/tmux set-option -t session set-remain-on-exit on
+		/usr/bin/tmux new-window -d -n 'startup' -t session:1 'cd /home/pi; sudo sh ./startup.sh'
+	OR
+		cd /home/pi
+		sudo sh ./startup.sh &
+- sudo apt install python-serial
+- USB Serial Port on RPi: /dev/ttyGS0
+
+
+4. Setup RTIMULib2 /w MPU9250
+- Clone RTIMULib2 with MPU9250 support from Nick-Currawong
+- Follow instructions to verify I2C (check ports, change baudrate, i2cdetect adress 68, set i2c privileges)
+	sudo apt-get install i2c-tools
+	ls -l /dev/i2c-*
+	sudo i2cdetect -y 1
+	sudo nano /etc/udev/rules.d/90-i2c.rules
+		KERNEL=="i2c-[0-7]",MODE="0666"
+	sudo udevadm control --reload
+- Install cmake: sudo apt install cmake
+- Build RTIMULib2 core:
+	cd RTIMULib2-master/RTIMULib
+	mkdir build
+	cd build
+	cmake ..
+	make -j4
+	sudo make install
+	sudo ldconfig
+- Build  RTIMULib calibration + drive:
+	cd RTIMULib2-master/Linux
+	mkdir build
+	cd build
+	cmake -DBUILD_GL=OFF -DBUILD_DRIVE10=OFF -DBUILD_DRIVE11=OFF -DBUILD_DEMO=OFF ..
+	make -j4
+	sudo make install
+	sudo ldconfig
+- Calibrate: cd home  +  sudo RTIMULibCal
+- Test:  RTIMULibDrive
+- Change RTIMULib.ini to increase sample rate and increase precision
+- Install python bindings
+	sudo apt install python-dev
+	cd RTIMULib2-master/Linux/python
+	python setup.py build
+	sudo python setup.py install
+- Test python: cd tests  +  python Fusion.py
+- Copy RTIMULib.ini file to working dir, call RTIMULibCal whenever needed
+
+Some manually:
+- Enable ssh
+	touch "ssh" in boot partition
+- Change hostname:
+	/etc/hosts :
+		change "raspberrypi" at end to "rpihmd"
+	/etc/hostname :
+		change "raspberrypi" to "rpihmd"
+- Enable USB Serial
+	boot config.txt : add at end: # For USB Serial
+			dtoverlay=dwc2
+			enable_uart=1
+	boot cmdline.txt : add after rootwait:
+			modules-load=dwc2,g_serial

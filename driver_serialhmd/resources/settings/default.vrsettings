@@ -8,22 +8,19 @@
 
 		"windowX" : 1920,
 		"windowY" : 0,
-		"windowWidth" : 1920,
-		"windowHeight" : 1080,
-		"renderWidth" : 960,
-		"renderHeight" : 1080,
+		"windowWidth" : 2560,
+		"windowHeight" : 1440,
+		"renderWidth" : 1792,
+		"renderHeight" : 2016,
 
 		"DistortionK1" : 0.91,
 		"DistortionK2" : 0.93,
 		"ZoomWidth" : 0.8,
 		"ZoomHeight" : 0.8,
 
-		"MonitorVID" : 0,
-		"MonitorPID" : 0,
-
 		"IsOnDesktop" : true,
 		"IsRealDisplay" : true,
 
-		"DebugMode" : true
+		"DebugMode" : false
 	}
 }
