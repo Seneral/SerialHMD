@@ -1,0 +1,156 @@
+
+GOAL: Low-latency serial communication between OpenVR driver and IMU device
+	
+IMU Device:
+	RPI0 (+ RTIMULib2): 
+		- High latency due to overhead and threading
+		+ Reusability: same setup for future project
+		+ Guaranteed best algorithms for interpreting IMU data
+		+ Library includes Calibration
+		
+	Arduino (+ IMU specific library):
+		+ Lowest Latency possible
+		- No algorithms for interpreting IMU data ?
+		- No on-board calibration ?
+	
+
+	
+{ OPEN VR DRIVER
+
+	vrHMD connected:
+		// TODO, check Serial Ports for connected headset:
+		Get all valid connected serial ports
+		1. Check identification of device
+		2. If not necessarily unique, send serial to request ID
+
+	vrHMD init:
+		If not done already, send serial to request ID
+		Send serial to start stream of pose data
+		Start thread
+		
+	Thread:
+		volatile bool abort
+		while true:
+			read latest serial data
+			write pose to TrackedDevicePoseUpdated
+			if abort: abort
+			
+	vrHMD close:
+		Set thread abort
+		Wait for thread join
+
+}
+
+
+{ RPI0? 
+
+	Startup:
+		Initiate interval check
+	
+	Interval check (1s):
+		Read serial data to check for requests
+		Answer request for ID, stream start, stream abort
+		While streaming, retain interval to check for abort?
+			If abort: abort
+			--OR incorporate abort serial read in Thread?--
+		
+	Send ID:
+		Send some hardcoded values for identification purposes
+		
+	Start Stream:
+		Start separate streaming thread with high priority
+	
+	Thread:
+		volatile bool abort
+		while true:
+			Read latest IMU data
+			Write data to serial ports
+			If not done in main thread: 
+				Read serial to check for abort request
+			If abort: abort
+		
+	End Stream
+		Set thread abort
+		Wait for thread join
+}
+
+{ Arduino? 
+
+	bool send
+
+	Init:
+		
+	Loop:
+		if send:
+			Read latest IMU data
+			Write data to serial port
+			Read serial to check for abort: Toggle send
+		else:
+			Read serial data to check for request
+			Request for ID: Send ID
+			Request for stream start, stream abort: Toggle send
+			Wait for 1s
+}
+
+
+
+
+{ Communication Protocol
+	Request/Response Format with variable codes (Key: [#_# / #_*(_)#])
+	Stream Format with limited ID, designed for throughput: 1 Byte ID, fixed number of bytes, next stream or command
+	
+	Singular Request / Push / Response Format: #ID# / #ID*D#
+		Identifier 'ID' 1 byte, Data 'D' variable length 
+		Default IDs: I - Identification, S - Stream/Source
+	Register / Deliver new Stream: #T*ID#
+		Identifier 'ID' and Type 'T' both one byte
+		Types: H - Head, S - Skeleton, C - Controller
+		Request fo
+		Start Head Tracking Stream Request: #1*H# (with ID 1)
+		Stream Response Format: 1 ID Byte,
+
+
+	M-S Identification Request: #I# 			#I*SerialHMD-DIY#		(Identified as SerialHMD)
+	M-S Request Streams:		#S#				#S*HC# 					(1 Head & 1 Controller)
+	M-S Register Streams:		#H*1# #C*2# 	#H*1# #C*2#				(Register Head-1 and Controller-2)
+	S-M-S Push new Sources:		#S*C#			#C*3# 		#C*3#		(New Controller connected and registered as 3)
+
+	Example Comm:
+	#I# #I*SerialHMD-DIY#
+	#S# #S*H#
+	#H*1# #1#
+	1YYYYPPPPRRRR
+	1YYYYPPPPRRRR
+	1YYYYPPPPRRRR
+	1YYYYPPPPRRRR
+	#S*C#
+	1YYYYPPPPRRRR
+	1YYYYPPPPRRRR
+	#C*2# #2#
+	2YYPPRRXXYY00
+	1YYYYPPPPRRRR
+	1YYYYPPPPRRRR
+	1YYYYPPPPRRRR
+	1YYYYPPPPRRRR
+	2YYPPRRXXYY20		// Button 2 pressed
+	1YYYYPPPPRRRR
+	1YYYYPPPPRRRR
+	1YYYYPPPPRRRR
+	1YYYYPPPPRRRR
+	2YYPPRRXXYY25		// Button 2 & 5 pressed
+	1YYYYPPPPRRRR
+	1YYYYPPPPRRRR
+	1YYYYPPPPRRRR
+	1YYYYPPPPRRRR
+	2YYPPRRXXYY50		// Button 5 pressed, Button 2 released
+	1YYYYPPPPRRRR
+	1YYYYPPPPRRRR
+	1YYYYPPPPRRRR
+	1YYYYPPPPRRRR
+	
+}
+
+
+
+
+
