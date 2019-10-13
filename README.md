@@ -51,3 +51,11 @@ As far as I can judge so far (considering I got a less-than perfect experience d
   <img src="HardwareImages/SerialHMD_SideUSB.jpg" width="20%" hspace="20"/>
   <img src="HardwareImages/SerialHMD_Electronics.jpg" width="20%" hspace="20"/>
 </p>
+
+
+## Future Plans
+If time allows, I'd like to first try the current setup with above mentioned two fixes. If that does not work too well, I intend to replace the Raspberry Pi Zero with a dedicated Micro Controller. Requires further research (e.g. how SPI/I2C can be adressed here, etc).
+### Farther future
+Positional tracking is complex and expensive. Once headtracking (rotational) is solid, I intend to add more rotational units to the limbs of the body to estimate pose and thus positional data. Alternatively I'll use (or improve it with) camera positional tracking. This would require a RPi Zero though in addition to the microcontroller(s).  
+This can easily be done in steps - first the arms for positional tracking of modified controllers in relation to the head only.  
+Camera Tracking would be done with a stereoscopical camera (rpi-based) which I have already solid plans of developing unrelated to whether I'll use it for this project (synchronizing two RPi cameras down to sub-ms levels, that is).
