@@ -2,24 +2,6 @@
 DIY VR driver based on OpenVR. Communicates with a Serial-Enabled RPiZ  
 Motivation: There's really not a lot of examples out there (and if they are, they are overly complex, abstract and hard to figure out). So this is mainly a resource. Haven't been able to perfect it yet, and not worked on it for months, so I'm not even sure it works with the latest version.
 
-## Structure
-driver_serialhmd: Last compiled driver  
-SerialHMD: Sources for the Steam Driver  
-SerialRPi: Scripts on RPi including necessary parts of RTIMULib2  
-SerialHMD_EmulatorWin: Command line tool to test the serial communication in a controlled environment  
-
-### Driver
-driver_serialhmd : HmdDriverFactory -- Entry Point for SteamVR  
-SerialHMDWatchdog : IVRWatchdogProvider -- AutoStart OpenVR once HMD has been detected  
-SerialHMDServer : IServerTrackedDeviceProvider -- Spawns Tracked Devices  
-SerialHMDDriver : ITrackedDeviceServerDriver, IVRDisplayComponent -- HMD interface  
-
-SerialHMDShared -- Shared Constants, Functions, ...  
-SerialHMDComm -- Serial Communications  
-DriverLog -- Default OpenVR Sample Driver Log  
-WinSerialDeviceUtility -- Serial Device Detection (Windows)  
-SerialPort -- Serial Communication Wrapper  
-
 ## Current State
 **Serial Communication:** Reliable and extendable to support future plans  
 **Headtracking:** works (see issues regarding accuracy) - fallback mouse (uncomment code)  
@@ -59,3 +41,21 @@ If time allows, I'd like to first try the current setup with above mentioned two
 Positional tracking is complex and expensive. Once headtracking (rotational) is solid, I intend to add more rotational units to the limbs of the body to estimate pose and thus positional data. Alternatively I'll use (or improve it with) camera positional tracking. This would require a RPi Zero though in addition to the microcontroller(s).  
 This can easily be done in steps - first the arms for positional tracking of modified controllers in relation to the head only.  
 Camera Tracking would be done with a stereoscopical camera (rpi-based) which I have already solid plans of developing unrelated to whether I'll use it for this project (synchronizing two RPi cameras down to sub-ms levels, that is).
+
+## Structure
+driver_serialhmd: Last compiled driver  
+SerialHMD: Sources for the Steam Driver  
+SerialRPi: Scripts on RPi including necessary parts of RTIMULib2  
+SerialHMD_EmulatorWin: Command line tool to test the serial communication in a controlled environment  
+
+### Driver
+driver_serialhmd : HmdDriverFactory -- Entry Point for SteamVR  
+SerialHMDWatchdog : IVRWatchdogProvider -- AutoStart OpenVR once HMD has been detected  
+SerialHMDServer : IServerTrackedDeviceProvider -- Spawns Tracked Devices  
+SerialHMDDriver : ITrackedDeviceServerDriver, IVRDisplayComponent -- HMD interface  
+
+SerialHMDShared -- Shared Constants, Functions, ...  
+SerialHMDComm -- Serial Communications  
+DriverLog -- Default OpenVR Sample Driver Log  
+WinSerialDeviceUtility -- Serial Device Detection (Windows)  
+SerialPort -- Serial Communication Wrapper  
