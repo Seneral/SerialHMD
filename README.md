@@ -2,6 +2,9 @@
 DIY VR driver based on OpenVR. Communicates with a Serial-Enabled RPiZ  
 Motivation: There's really not a lot of examples out there (and if they are, they are overly complex, abstract and hard to figure out). So this is mainly a resource. Haven't been able to perfect it yet, and not worked on it for months, so I'm not even sure it works with the latest version.
 
+## Note: Deprecated
+Currently working on a new version based on STM32 with proper low-latency USB-communication (same as Oculus DKs) and a full optical tracking system.
+
 ## Current State
 **Serial Communication:** Reliable and extendable to support future plans  
 **Headtracking:** works (see issues regarding accuracy) - fallback mouse (uncomment code)  
